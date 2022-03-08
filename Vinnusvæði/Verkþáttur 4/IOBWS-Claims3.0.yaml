@@ -3,26 +3,22 @@ info:
   title: IOBWS 3.0 Domestic Claims
   version: "3.0"
   description: |
-    The service is two folded.
-    1. Claims methods used by companies
-    2. Collection used by collection companies
+    The claim service is focused on two parties. First is the company (claimant) who creates claims and then
+    the collection company.  
 
-    Claim Service
     The Claims Service enables creditors to create, modify and cancel claims. A creditor can also revive canceled
     claims, send claims to an intermediate debt collector and obtain a list of claims according to the given search
     criteria, and thus get a good overview of all their claims.
 
-    Collection Service
-    The Collection Service enables dept collectors to work with the claims under their care. The service is mostly
-    as structured as the service for claims, except that it is not possible to create collection claims
+    The Collection Service uses the same endpoints as the claimant endpoints. There is a restriction on the 
+    collection company, it's not allowed to create claims. The claim service enables dept collectors to work 
+    with the claims under their care. The service is mostly as structured as the service for claims, except 
+    that it is not possible to create collection claims
 
-  license:
-    name: Creative Commons Attribution 4.0 International Public License
-    url: https://creativecommons.org/licenses/by/4.0/
   contact:
     name: Stadlarad Islands
     url: https://www.stadlar.is
-    email: openbanking@stadlar.is
+    email: stadlar@stadlar.is
 
 paths:
 
@@ -35,7 +31,8 @@ paths:
     get:
       summary: List of claim templates
       description: |
-        Returns a list of claim templates according to the filters provided
+        Returns a list of claim templates according to the filters provided. Claim template describes many 
+        attributes of the claim process and gives the consumer key information needed to know.
       operationId: getClaimTemplateList
       tags:
         - Claim Service
@@ -57,8 +54,8 @@ paths:
       #path # NO PATH PARAMETER
       #query
         - $ref: "#/components/parameters/claimantIdQuery"
-        - $ref: "#/components/schemas/bankCode"
-        - $ref: "#/components/schemas/templateCode"
+        - $ref: "#/components/parameters/bankCodeQuery"
+        - $ref: "#/components/parameters/templateCodeQuery"
         - $ref: "#/components/parameters/isActiveQuery"
         - $ref: "#/components/parameters/page"
         - $ref: "#/components/parameters/itemsPerPage"
@@ -66,7 +63,6 @@ paths:
           #mandatory header parameter
         - $ref: "#/components/parameters/X-Request-ID"
           #optional header parameters
-        - $ref: "#/components/parameters/PSU-IP-Address_optional"
         - $ref: "#/components/parameters/Authorization"
         #NO REQUEST BODY
 
@@ -123,7 +119,6 @@ paths:
           #mandatory header parameter
         - $ref: "#/components/parameters/X-Request-ID"
           #optional header parameters
-        - $ref: "#/components/parameters/PSU-IP-Address_optional"
         - $ref: "#/components/parameters/Authorization"
         #NO REQUEST BODY
 
@@ -158,7 +153,8 @@ paths:
     get:
       summary: Get single claim
       description: |
-        The QueryClaim function returns the billing claim requested based on a composite key (claim-id).
+        Returns single claim if exists or if the user has access. The single claim function returns the existing 
+        claim requested based on the claim id.
       operationId: queryClaim
       tags:
         - Claim Service
@@ -184,7 +180,6 @@ paths:
           #mandatory header parameter
         - $ref: "#/components/parameters/X-Request-ID"
           #optional header parameters
-        - $ref: "#/components/parameters/PSU-IP-Address_optional"
         - $ref: "#/components/parameters/Authorization"
         #NO REQUEST BODY
 
@@ -239,7 +234,6 @@ paths:
         #mandatory header parameter
         - $ref: "#/components/parameters/X-Request-ID"
         #optional header parameters
-        - $ref: "#/components/parameters/PSU-IP-Address_optional"
         - $ref: "#/components/parameters/Authorization"
         #NO REQUEST BODY
 
@@ -265,12 +259,12 @@ paths:
         '503':
           $ref: "#/components/responses/SERVICE_UNAVAILABLE_503"
 
-    put:
-      summary: Alter existing claim
+    patch:
+      summary: Patches existing claim
       description: |
-        The Alter Claim function modifies a previously created collection claim. The claim in its entirety is
+        The Patch Claim function modifies a previously created claim. The patch is
         then submitted and amended according to new information.
-      operationId: alterClaim
+      operationId: patchClaim
       tags:
         - Claim Service
       security:
@@ -296,12 +290,11 @@ paths:
         - $ref: "#/components/parameters/X-Request-ID"
         #optional header parameters
         - $ref: "#/components/parameters/X-Idempotency-Key"
-        - $ref: "#/components/parameters/PSU-IP-Address_optional"
         - $ref: "#/components/parameters/Authorization"
         #NO REQUEST BODY
 
       requestBody:
-        $ref: "#/components/requestBodies/alterClaim"
+        $ref: "#/components/requestBodies/patchClaim"
 
       responses:
         '200':
@@ -330,7 +323,7 @@ paths:
     get:
       summary: Query claim payments
       description: |
-        Get all payments for a claim
+        Returns all claim payments. Payments are visible on the claim in near realtime.
       operationId: queryClaimPayments
       tags:
         - Claim Service
@@ -358,7 +351,6 @@ paths:
           #mandatory header parameter
         - $ref: "#/components/parameters/X-Request-ID"
           #optional header parameters
-        - $ref: "#/components/parameters/PSU-IP-Address_optional"
         - $ref: "#/components/parameters/Authorization"
         #NO REQUEST BODY
 
@@ -418,7 +410,6 @@ paths:
           #mandatory header parameter
         - $ref: "#/components/parameters/X-Request-ID"
           #optional header parameters
-        - $ref: "#/components/parameters/PSU-IP-Address_optional"
         - $ref: "#/components/parameters/Authorization"
         #NO REQUEST BODY
 
@@ -444,13 +435,13 @@ paths:
         '503':
           $ref: "#/components/responses/SERVICE_UNAVAILABLE_503"
 
-  /v1/claims/{claimId}/transfer:
+  /v1/claims/{claimId}/collection:
 
     put:
-      summary: Move claim between template code.
+      summary: Move claim between claim templates.
       description: |
-        The action transfer replaces the claim template code and by doing so the claim is moved to
-        claim collection and made accessable by claim collection services.
+        The action transfers the claim between template code. When claim is moved between template codes
+        it might change who can see the claim. Claims in primary collection are only visible to the claimant.
       operationId: transferClaim
       tags:
         - Claim Service
@@ -471,13 +462,13 @@ paths:
       parameters:
       #path
         - $ref: "#/components/parameters/claimId"
-      #query # NO QUERY PARAMETER
+      #query
+        - $ref: "#/components/schemas/templateCode"
       #header
         #mandatory header parameter
         - $ref: "#/components/parameters/X-Request-ID"
         #optional header parameters
         - $ref: "#/components/parameters/X-Idempotency-Key"
-        - $ref: "#/components/parameters/PSU-IP-Address_optional"
         - $ref: "#/components/parameters/Authorization"
         #NO REQUEST BODY
 
@@ -506,10 +497,10 @@ paths:
   /v1/claims:
 
     get:
-      summary: Gets a list of claims defined by the query object
+      summary: Get a list of claims as defined by the query.
       description: |
-        The QueryClaims function returns a list of billing claims based on the called creditors. The maximum
-        return is set with the page number and number per page.
+        The QueryClaims function returns a list of claims. The maximum return is set with the page number and 
+        number per page.
       operationId: queryClaims
       tags:
         - Claim Service
@@ -544,7 +535,6 @@ paths:
         #mandatory header parameter
         - $ref: "#/components/parameters/X-Request-ID"
           #optional header parameters
-        - $ref: "#/components/parameters/PSU-IP-Address_optional"
         - $ref: "#/components/parameters/Authorization"
 
       responses:
@@ -572,8 +562,9 @@ paths:
     post:
       summary: Create claim
       description: |
-        The Create Claim function creates a new billing claim.
-      operationId: createClaim
+        Create new claim. When claim is create operation is returned with information if claim was 
+        created successfully or not.
+      operationId: createClaims
       tags:
         - Claim Service
       security:
@@ -598,7 +589,6 @@ paths:
         #mandatory header parameter
         - $ref: "#/components/parameters/X-Request-ID"
         #optional header parameters
-        - $ref: "#/components/parameters/PSU-IP-Address_optional"
         - $ref: "#/components/parameters/Authorization"
         #NO REQUEST BODY
 
@@ -633,7 +623,7 @@ paths:
       summary: List of action defined by the request body object
       description: |
         Creates a list of action defined by the request body object
-      operationId: createActionBatch
+      operationId: createBatch
       tags:
         - Claim Service
       security:
@@ -658,7 +648,6 @@ paths:
         - $ref: "#/components/parameters/X-Request-ID"
         #optional header parameters
         - $ref: "#/components/parameters/X-Idempotency-Key"
-        - $ref: "#/components/parameters/PSU-IP-Address_optional"
         - $ref: "#/components/parameters/Authorization"
         #NO REQUEST BODY
 
@@ -718,7 +707,6 @@ paths:
         #mandatory header parameter
         - $ref: "#/components/parameters/X-Request-ID"
         #optional header parameters
-        - $ref: "#/components/parameters/PSU-IP-Address_optional"
         - $ref: "#/components/parameters/Authorization"
 
       responses:
@@ -777,7 +765,6 @@ paths:
         #mandatory header parameter
         - $ref: "#/components/parameters/X-Request-ID"
         #optional header parameters
-        - $ref: "#/components/parameters/PSU-IP-Address_optional"
         - $ref: "#/components/parameters/Authorization"
 
       responses:
@@ -809,7 +796,7 @@ paths:
       description: |
         Returns a list of failed batch actions with reason. The maximum
         return is set with the page number and number per page.
-      operationId: queryClaims
+      operationId: queryFailedBatch
       tags:
         - Claim Service
       security:
@@ -836,7 +823,6 @@ paths:
         #mandatory header parameter
         - $ref: "#/components/parameters/X-Request-ID"
           #optional header parameters
-        - $ref: "#/components/parameters/PSU-IP-Address_optional"
         - $ref: "#/components/parameters/Authorization"
 
       responses:
@@ -867,7 +853,7 @@ paths:
       summary: Gets a list of claim payments defined by the query object
       description: |
         Gets a list of claim payments defined by the query object
-      operationId: getClaimsPaymentList
+      operationId: getClaimTransactions
       tags:
         - Claim Service
       security:
@@ -902,7 +888,6 @@ paths:
           #mandatory header parameter
         - $ref: "#/components/parameters/X-Request-ID"
           #optional header parameters
-        - $ref: "#/components/parameters/PSU-IP-Address_optional"
         - $ref: "#/components/parameters/Authorization"
         #NO REQUEST BODY
 
@@ -961,7 +946,6 @@ paths:
           #mandatory header parameter
         - $ref: "#/components/parameters/X-Request-ID"
           #optional header parameters
-        - $ref: "#/components/parameters/PSU-IP-Address_optional"
         - $ref: "#/components/parameters/Authorization"
         #NO REQUEST BODY
 
@@ -1017,7 +1001,6 @@ paths:
         - $ref: "#/components/parameters/X-Request-ID"
         #optional header parameters
         - $ref: "#/components/parameters/X-Idempotency-Key"
-        - $ref: "#/components/parameters/PSU-IP-Address_optional"
         - $ref: "#/components/parameters/Authorization"
         #NO REQUEST BODY
 
@@ -1079,7 +1062,6 @@ paths:
           #mandatory header parameter
         - $ref: "#/components/parameters/X-Request-ID"
           #optional header parameters
-        - $ref: "#/components/parameters/PSU-IP-Address_optional"
         - $ref: "#/components/parameters/Authorization"
         #NO REQUEST BODY
 
@@ -1136,7 +1118,6 @@ paths:
         #mandatory header parameter
         - $ref: "#/components/parameters/X-Request-ID"
         #optional header parameters
-        - $ref: "#/components/parameters/PSU-IP-Address_optional"
         - $ref: "#/components/parameters/Authorization"
         #NO REQUEST BODY
 
@@ -1184,9 +1165,7 @@ components:
     BearerAuthOAuth:
       description: |
         Bearer Token.
-
-        Is contained only, if an OAuth2 based authentication was performed in a pre-step or
-        an OAuth2 based SCA was performed in a preceding AIS service in the same session.
+        Is contained only, if an OAuth2 based authentication was performed in a pre-step.
       type: http
       scheme: bearer
 
@@ -1217,40 +1196,6 @@ components:
       additionalProperties:
         $ref: "#/components/schemas/hrefType"
       properties:
-        scaRedirect:
-          $ref: "#/components/schemas/hrefType"
-        scaOAuth:
-          $ref: "#/components/schemas/hrefType"
-        confirmation:
-          $ref: "#/components/schemas/hrefType"
-        startAuthorisation:
-          $ref: "#/components/schemas/hrefType"
-        startAuthorisationWithPsuIdentification:
-          $ref: "#/components/schemas/hrefType"
-        updatePsuIdentification:
-          $ref: "#/components/schemas/hrefType"
-        startAuthorisationWithProprietaryData:
-          $ref: "#/components/schemas/hrefType"
-        updateProprietaryData:
-          $ref: "#/components/schemas/hrefType"
-        startAuthorisationWithPsuAuthentication:
-          $ref: "#/components/schemas/hrefType"
-        updatePsuAuthentication:
-          $ref: "#/components/schemas/hrefType"
-        startAuthorisationWithEncryptedPsuAuthentication:
-          $ref: "#/components/schemas/hrefType"
-        updateEncryptedPsuAuthentication:
-          $ref: "#/components/schemas/hrefType"
-        updateAdditionalPsuAuthentication:
-          $ref: "#/components/schemas/hrefType"
-        updateAdditionalEncryptedPsuAuthentication:
-          $ref: "#/components/schemas/hrefType"
-        startAuthorisationWithAuthenticationMethodSelection:
-          $ref: "#/components/schemas/hrefType"
-        selectAuthenticationMethod:
-          $ref: "#/components/schemas/hrefType"
-        startAuthorisationWithTransactionAuthorisation:
-          $ref: "#/components/schemas/hrefType"
         self:
           $ref: "#/components/schemas/hrefType"
         status:
@@ -1343,7 +1288,7 @@ components:
       description: |
         Reference number determined by creditors. May be a number and letters.
       type: string
-      maxLength: 35
+      maxLength: 16
 
     currencyCode:
       description: |
@@ -1355,24 +1300,6 @@ components:
     isActive:
       description: Describes is active state.
       type: boolean
-
-    amountValueNotRequired:
-      description: |
-        The amount given with fractional digits, where fractions must be compliant to the currency definition.
-        Up to 14 significant figures. Negative amounts are signed by minus.
-        The decimal separator is a dot.
-
-        **Example:**
-        Valid representations for numbers with up to two decimals are:
-
-          * 1056
-          * 5768.2
-          * -1.50
-          * 5877.78
-      required: false
-      type: string
-      pattern: "-?[0-9]{1,14}(\\.[0-9]{1,3})?"
-      example: "5877.78"
 
     amountValue:
       description: |
@@ -1387,7 +1314,6 @@ components:
           * 5768.2
           * -1.50
           * 5877.78
-      required: true
       type: string
       pattern: "-?[0-9]{1,14}(\\.[0-9]{1,3})?"
       example: "5877.78"
@@ -1455,6 +1381,40 @@ components:
         - "LastChangedDate"
 
     # COMPLEX
+
+    patchObject:
+      description: A JSONPatch document as defined by RFC 6902
+      required:
+       - "op"
+       - "path"
+      properties:
+        op:
+          type: string
+          description: The operation to be performed
+          enum:
+           - "add"
+           - "remove"
+           - "replace"
+           - "move"
+           - "copy"
+           - "test"
+        path:
+          type: string
+          description: A JSON-Pointer
+        value:
+          type: object
+          description: The value to be used within the operations.
+        from:
+          type: string
+          description: A string containing a JSON Pointer value.
+
+    patchObjectList:
+      description: |
+        List of patches on a set of objects
+      type: array
+      items:
+        $ref: "#/components/schemas/patchObject"
+
 
     documentReference:
       type: object
@@ -1623,8 +1583,6 @@ components:
           type: string
           pattern: "[0-9A-Za-z]{3}"
           example: "MI1"
-        minimumCollectionAmount:
-          $ref: "#/components/schemas/amountValueNotRequired"
         withdrawalAccountId:
           $ref: "#/components/schemas/accountNo"
         additionalDepositingAccounts:
@@ -1643,7 +1601,7 @@ components:
       description: |
         Contains information on the fee for calculating and printing payment slips as well as sending it to the payor.
 
-        NoticeAndPaymentFee has beeen renamed from previous standard to PaymentFee
+        NoticeAndPaymentFee has been renamed from previous standard to PaymentFee
           - Printing (Payment Fee) (is. Greiðslugjald)
           - Paperless (Direct Debit Fee) (is. Beingreiðslugjald)
       type: object
@@ -1655,7 +1613,8 @@ components:
 
     claimKey:
       description: |
-        OK
+        Claim key is a composit key of kennitala, account no and due date. Accountno is defined as
+        <bank code>66<claim number>
       type: object
       required:
         - claimantId
@@ -1695,18 +1654,6 @@ components:
           $ref: "#/components/schemas/dayAmountItem"
         second:
           $ref: "#/components/schemas/dayAmountItem"
-
-    billPresentmentSystem:
-      description: |
-        Contains information on the publication system in which a collection claim is published, if any.
-      properties:
-        fieldType:
-          type: string
-          enum:
-            - "A"
-            - "D"
-        parameters:
-          type: string
 
     address:
       description: |
@@ -1860,95 +1807,6 @@ components:
             - "B"
             - "C"
 
-    claimDetailInformation:
-      description: |
-        OK
-      type: object
-      required:
-        - cancellationDate
-        - templateCode
-        - amount
-        - reference
-        - finalDueDate
-        - otherCosts
-        - otherDefaultCosts
-      properties:
-        cancellationDate:
-          type: string
-          format: date
-        templateCode:
-          $ref: "#/components/schemas/templateCode"
-        amount:
-          $ref: "#/components/schemas/amount"
-        reference:
-          $ref: "#/components/schemas/reference"
-        finalDueDate:
-          type: string
-          format: date
-        billNumber:
-          description: Banknote number, optional. Information provided by creditors.
-          type: string
-        customerNumber:
-          description: |
-            Customer billing. Unique key of the payor of the claim with the creditor. Necessary if a direct payment
-            agreement related to a collection claim is to be established.
-          type: string
-        paymentFee:
-          $ref: "#/components/schemas/paymentFee"
-        otherCosts:
-          description: |
-            Other costs, including determined fees paid by the payor of a collection claim.
-          type: string
-          pattern: "-?[0-9]{1,14}(\\.[0-9]{1,3})?"
-          example: "5877.00"
-        otherDefaultCosts:
-          description: |
-            Determined fees, e.g. intermediate collection fee.
-          type: string
-          pattern: "-?[0-9]{1,14}(\\.[0-9]{1,3})?"
-          example: "5877.00"
-
-    claimDetailRules:
-      description: |
-        OK
-      type: object
-      required:
-        - defaultCharge
-        - defaultInterest
-        - isPartialPaymentAllowed
-      properties:
-        defaultCharge:
-          description: |
-            Contains information on the default fee, either in a fixed amount or in percentages. Note that the
-            amount must be within the rules that apply according to Regulation 37/2009.
-          $ref: "#/components/schemas/defaultCharge"
-        defaultInterest:
-          description: |
-            Contains information on how penalty interest is calculated.
-          $ref: "#/components/schemas/defaultInterest"
-        discount:
-          description: |
-            Contains information about discount as constant or percent
-          $ref: "#/components/schemas/discount"
-        permitOutOfSequencePayment:
-          description: Out of sequence payment allowed
-          type: boolean
-        isPartialPaymentAllowed:
-          description: Partial payment is allowed
-          type: boolean
-
-    claimDetailOther:
-      description: |
-        OK
-      type: object
-      properties:
-        CurrencyInformation:
-          $ref: "#/components/schemas/currencyInformation"
-        billPresentmentSystem:
-          $ref: "#/components/schemas/billPresentmentSystem"
-        printing:
-          $ref: "#/components/schemas/printing"
-
     claimStatus:
       description: Claim status
       type: string
@@ -1965,58 +1823,6 @@ components:
       - "PrimaryCollection"
       - "SecondaryCollection"
       - "LegalCollection"
-
-
-    claimDetailStatus:
-      description: |
-        Contains claim status information.
-
-        Claim status:
-        - Unpaid: Claim is unpaid.
-        - Paid: Claim has paid in full.
-        - Canceled: Claim has been canceled.
-        - Invalid: Claim has received an error while creating.
-
-        Claim state:
-        - PrimaryCollection: A collection claim has been placed in the primary collection.
-        - SecondaryCollection: The billing request has been placed in the intermediate billing.
-        - LegalCollection: A collection claim has been placed in legal collection.
-      type: object
-      required:
-        - isPartiallyPaid
-        - status
-        - state
-        - totalAmountDue
-      properties:
-        isPartiallyPaid:
-          description: Indicates whether payment has been made on the claim
-          type: boolean
-        status:
-          $ref: "#/components/schemas/claimStatus"
-        collectionState:
-          $ref: "#/components/schemas/collectionState"
-        categoryCode:
-          description: Creditors' text key, explanation of payment. Optional attribute on billing claim
-          type: string
-          pattern: '[0-9]{3}'
-        totalAmountDue:
-          $ref: "#/components/schemas/amountValue"
-        noticeChargeAmount:
-          $ref: "#/components/schemas/amountValue"
-        defaultChargeAmount:
-          $ref: "#/components/schemas/amountValue"
-        otherCostsAmount:
-          $ref: "#/components/schemas/amountValue"
-        otherDefaultCostsAmount:
-          $ref: "#/components/schemas/amountValue"
-        defaultInterestAmount:
-          $ref: "#/components/schemas/amountValue"
-        discountAmount:
-          $ref: "#/components/schemas/amountValue"
-        secondaryCollectionIdentifier:
-          $ref: "#/components/schemas/templateCode"
-        legalCollectionIdentifier:
-          $ref: "#/components/schemas/templateCode"
 
     claimKeyListDetails:
       description: |
@@ -2039,34 +1845,6 @@ components:
       items:
         $ref: "#/components/schemas/claimDetails"
 
-    createClaimListDetails:
-      description: |
-        List of claim
-      type: array
-      items:
-        $ref: "#/components/schemas/createClaimDetails"
-
-    transferClaimListDetails:
-      description: |
-        List of claims to transfer
-      type: array
-      items:
-        $ref: "#/components/schemas/transferClaimDetails"
-
-    alterClaimListDetails:
-      description: |
-        List of claim
-      type: array
-      items:
-        $ref: "#/components/schemas/alterClaimDetails"
-
-    cancelClaimListDetails:
-      description: |
-        List of claim
-      type: array
-      items:
-        $ref: "#/components/schemas/cancelClaimDetails"
-
     claimTemplateList:
       description: |
         List of claim templates
@@ -2074,26 +1852,100 @@ components:
       items:
         $ref: "#/components/schemas/claimTemplateDetails"
 
-
     claimDetails:
       description: |
-        OK
+        Claim object
+
+        Description:
+        * billNumber: Banknote number, optional. Information provided by creditors.        
+        * discount: Contains information about discount as constant or percent
+        * customerNumber: Customer billing. Unique key of the payor of the claim with the creditor. Necessary if a 
+                          direct payment agreement related to a collection claim is to be established.
+        * otherCosts: Other costs, including determined fees paid by the payor of a collection claim.
+        * defaultCharge: Contains information on the default fee, either in a fixed amount or in percentages. Note that 
+                         the amount must be within the rules that apply according to Regulation 37/2009.
+        * otherDefaultCosts: Determined fees, e.g. intermediate collection fee.
+        * defaultInterest: Contains information on how penalty interest is calculated.
+        * discount: Contains information about discount as constant or percent
+        * permitOutOfSequencePayment: Out of sequence payment allowed
+        * isPartialPaymentAllowed: Partial payment is allowed
+        * isPartialPaymentAllowed: Partial payment is allowed 
+        *   additionalInformation:
+          description: |
+            Will be diplayed to the payor of the claim        
+
       type: object
       required:
         - claimKey
         - payorId
-        - claimDetailInformation
+        # details
+        - cancellationDate
+        - templateCode
+        - amount
+        - reference
+        - finalDueDate
+        - otherCosts
+        - otherDefaultCosts
+        # rules
+        - defaultCharge
+        - defaultInterestx
+        - isPartialPaymentAllowed
+        # other
       properties:
         claimKey:
           $ref: "#/components/schemas/claimKey"
         payorId:
           $ref: "#/components/schemas/kennitala"
-        claimDetailInformation:
-          $ref: "#/components/schemas/claimDetailInformation"
-        claimDetailRule:
-          $ref: "#/components/schemas/claimDetailRules"
-        claimDetailOther:
-          $ref: "#/components/schemas/claimDetailOther"
+        claimStatus:
+          $ref: "#/components/schemas/claimStatus"
+        collectionState:
+          $ref: "#/components/schemas/collectionState"
+        # details
+        cancellationDate:
+          type: string
+          format: date
+        templateCode:
+          $ref: "#/components/schemas/templateCode"
+        amount:
+          $ref: "#/components/schemas/amount"
+        reference:
+          $ref: "#/components/schemas/reference"
+        finalDueDate:
+          type: string
+          format: date
+        billNumber:
+          type: string
+        customerNumber:
+          type: string
+        paymentFee:
+          $ref: "#/components/schemas/paymentFee"
+        otherCosts:
+          type: string
+          pattern: "-?[0-9]{1,14}(\\.[0-9]{1,3})?"
+          example: "5877.00"
+        otherDefaultCosts:
+          type: string
+          pattern: "-?[0-9]{1,14}(\\.[0-9]{1,3})?"
+          example: "5877.00"
+        # rules
+        defaultCharge:
+          $ref: "#/components/schemas/defaultCharge"
+        defaultInterest:
+          $ref: "#/components/schemas/defaultInterest"
+        discount:
+          $ref: "#/components/schemas/discount"
+        permitOutOfSequencePayment:
+          type: boolean
+        isPartialPaymentAllowed:
+          type: boolean
+        # other
+        CurrencyInformation:
+          $ref: "#/components/schemas/currencyInformation"
+        additionalInformation:
+          type: string
+          maxLength: 200
+        printing:
+          $ref: "#/components/schemas/printing"
         lastChangeDateTime:
           description: |
             This data element might be used to indicate e.g. last time when changed.
@@ -2124,57 +1976,178 @@ components:
 
     alterClaimDetails:
       description: |
-        OK
+        Alter claim object
+
+        Description:
+        * billNumber: Banknote number, optional. Information provided by creditors.        
+        * discount: Contains information about discount as constant or percent
+        * customerNumber: Customer billing. Unique key of the payor of the claim with the creditor. Necessary if a 
+                          direct payment agreement related to a collection claim is to be established.
+        * otherCosts: Other costs, including determined fees paid by the payor of a collection claim.
+        * defaultCharge: Contains information on the default fee, either in a fixed amount or in percentages. Note that 
+                         the amount must be within the rules that apply according to Regulation 37/2009.
+        * otherDefaultCosts: Determined fees, e.g. intermediate collection fee.
+        * defaultInterest: Contains information on how penalty interest is calculated.
+        * discount: Contains information about discount as constant or percent
+        * permitOutOfSequencePayment: Out of sequence payment allowed
+        * isPartialPaymentAllowed: Partial payment is allowed
+        * isPartialPaymentAllowed: Partial payment is allowed 
+        *   additionalInformation:
+          description: |
+            Will be diplayed to the payor of the claim
       type: object
       required:
         - claimKey
-        - claimDetailInformation
+        # details
+        - cancellationDate
+        - templateCode
+        - amount
+        - reference
+        - finalDueDate
+        - otherCosts
+        - otherDefaultCosts
+        # rules
+        - defaultCharge
+        - defaultInterest
+        - isPartialPaymentAllowed
+        # other
       properties:
         claimKey:
           $ref: "#/components/schemas/claimKey"
-        claimDetailInformation:
-          $ref: "#/components/schemas/claimDetailInformation"
-        claimDetailRule:
-          $ref: "#/components/schemas/claimDetailRules"
-        claimDetailOther:
-          $ref: "#/components/schemas/claimDetailOther"
+        # details
+        cancellationDate:
+          type: string
+          format: date
+        templateCode:
+          $ref: "#/components/schemas/templateCode"
+        amount:
+          $ref: "#/components/schemas/amount"
+        reference:
+          $ref: "#/components/schemas/reference"
+        finalDueDate:
+          type: string
+          format: date
+        billNumber:
+          type: string
+        customerNumber:
+          type: string
+        paymentFee:
+          $ref: "#/components/schemas/paymentFee"
+        otherCosts:
+          type: string
+          pattern: "-?[0-9]{1,14}(\\.[0-9]{1,3})?"
+          example: "5877.00"
+        otherDefaultCosts:
+          type: string
+          pattern: "-?[0-9]{1,14}(\\.[0-9]{1,3})?"
+          example: "5877.00"
+        # rules
+        defaultCharge:
+          $ref: "#/components/schemas/defaultCharge"
+        defaultInterest:
+          $ref: "#/components/schemas/defaultInterest"
+        discount:
+          $ref: "#/components/schemas/discount"
+        permitOutOfSequencePayment:
+          type: boolean
+        isPartialPaymentAllowed:
+          description: Partial payment is allowed
+          type: boolean
+        # other
+        CurrencyInformation:
+          $ref: "#/components/schemas/currencyInformation"
+        additionalInformation:
+          type: string
+          maxLength: 200
+        printing:
+          $ref: "#/components/schemas/printing"
 
     createClaimDetails:
       description: |
-        OK
+        Create claim object
+
+        Description:
+        * billNumber: Banknote number, optional. Information provided by creditors.        
+        * discount: Contains information about discount as constant or percent
+        * customerNumber: Customer billing. Unique key of the payor of the claim with the creditor. Necessary if a 
+                          direct payment agreement related to a collection claim is to be established.
+        * otherCosts: Other costs, including determined fees paid by the payor of a collection claim.
+        * defaultCharge: Contains information on the default fee, either in a fixed amount or in percentages. Note that 
+                         the amount must be within the rules that apply according to Regulation 37/2009.
+        * otherDefaultCosts: Determined fees, e.g. intermediate collection fee.
+        * defaultInterest: Contains information on how penalty interest is calculated.
+        * discount: Contains information about discount as constant or percent
+        * permitOutOfSequencePayment: Out of sequence payment allowed
+        * isPartialPaymentAllowed: Partial payment is allowed
+        * isPartialPaymentAllowed: Partial payment is allowed 
+        *   additionalInformation:
+          description: |
+            Will be diplayed to the payor of the claim
       type: object
       required:
         - claimKey
         - payorId
-        - claimDetailInformation
+        # details
+        - cancellationDate
+        - templateCode
+        - amount
+        - reference
+        - finalDueDate
+        - otherCosts
+        - otherDefaultCosts
+        # rules
+        # other
       properties:
         claimKey:
           $ref: "#/components/schemas/claimKey"
         payorId:
           $ref: "#/components/schemas/kennitala"
-        claimDetailInformation:
-          $ref: "#/components/schemas/claimDetailInformation"
-        claimDetailRule:
-          $ref: "#/components/schemas/claimDetailRules"
-        claimDetailOther:
-          $ref: "#/components/schemas/claimDetailOther"
-
-    recreateClaimDetails:
-      description: |
-        OK
-      type: object
-      required:
-        - claimKey
-        - claimDetailInformation
-      properties:
-        claimKey:
-          $ref: "#/components/schemas/claimKey"
-        claimDetailInformation:
-          $ref: "#/components/schemas/claimDetailInformation"
-        claimDetailRule:
-          $ref: "#/components/schemas/claimDetailRules"
-        claimDetailOther:
-          $ref: "#/components/schemas/claimDetailOther"
+        # details
+        cancellationDate:
+          type: string
+          format: date
+        templateCode:
+          $ref: "#/components/schemas/templateCode"
+        amount:
+          $ref: "#/components/schemas/amount"
+        reference:
+          $ref: "#/components/schemas/reference"
+        finalDueDate:
+          type: string
+          format: date
+        billNumber:
+          type: string
+        customerNumber:
+          type: string
+        paymentFee:
+          $ref: "#/components/schemas/paymentFee"
+        otherCosts:
+          type: string
+          pattern: "-?[0-9]{1,14}(\\.[0-9]{1,3})?"
+          example: "5877.00"
+        otherDefaultCosts:
+          type: string
+          pattern: "-?[0-9]{1,14}(\\.[0-9]{1,3})?"
+          example: "5877.00"
+        # rules
+        defaultCharge:
+          $ref: "#/components/schemas/defaultCharge"
+        defaultInterest:
+          $ref: "#/components/schemas/defaultInterest"
+        discount:
+          $ref: "#/components/schemas/discount"
+        permitOutOfSequencePayment:
+          type: boolean
+        isPartialPaymentAllowed:
+          type: boolean
+        # other
+        CurrencyInformation:
+          $ref: "#/components/schemas/currencyInformation"
+        additionalInformation:
+          type: string
+          maxLength: 200
+        printing:
+          $ref: "#/components/schemas/printing"
 
     cancelClaimDetails:
       description: |
@@ -2189,52 +2162,43 @@ components:
     createClaimList:
       description: |
         JSON request body for a claims update request message
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/createClaimListDetails"
+      type: array
+      items:
+        $ref: "#/components/schemas/createClaimDetails"
 
     recreateClaimList:
       description: |
         JSON request body for a claims update request message
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/createClaimListDetails"
+      type: array
+      items:
+        $ref: "#/components/schemas/createClaimDetails"
 
     transferClaimList:
       description: |
         JSON request body for a claims update request message
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/transferClaimListDetails"
+      type: array
+      items:
+        $ref: "#/components/schemas/transferClaimDetails"
 
     alterClaimList:
       description: |
         JSON request body for a claims update request message
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/alterClaimListDetails"
+      type: array
+      items:
+        $ref: "#/components/schemas/alterClaimDetails"
 
     cancelClaimList:
       description: |
         JSON request body for a claims update request message
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/cancelClaimListDetails"
+      type: array
+      items:
+        $ref: "#/components/schemas/cancelClaimDetails"
 
     # RESPONSES
 
     batchStatus:
-      description: Status of a batch initiation
+      description: | 
+        Status of an batch initiation
       properties:
         batchId:
           $ref: "#/components/schemas/uuid"
@@ -2398,6 +2362,32 @@ components:
     claimPayment:
       description: |
         Contains individual payment information.
+        
+        Description:
+        * templateCode: Creditors' identity to which the collection claim relates. Specifies the disposable account 
+                        of the creditors to use the system.
+        * reference: Reference number determined by creditors. May be a number and letters. 
+        * categoryCode: Creditors' text key, explanation of payment. Optional attribute on billing claim 
+        * transactionDate: Date when the update of the claims register is performed
+        * bookingDate: Date when the booked at RB
+        * valueDate: Legal date of the date on which the effective date or interest date of payment is based, a maximum 
+                     of 10 calendar days back in time. If the date is not specified, blank, then it is based on the 
+                     transaction date. 
+                     Payment of a claim is the interest date of the effective date of penalty interest. 
+        * paymentType: Type of payment, full payment, deposit, refund.
+        * amountDeposited: The amount deposited at the disposal of creditors' accounts.
+        * totalAmount: Total amount paid
+        * capitalGainsTax: Deducted capital gains tax.
+        * billNumber: Bill number.
+        * customerNumber: Customer number.
+        * noticeChargeAmount: Paid notification fee
+        * noticeChargeAmount: Paid notification fee
+        * defaultChargeAmount: Paid amount of arrears to be paid
+        * otherCostsAmount: Other paid cost.
+        * otherDefaultCostsAmount: Other default paid.
+        * defaultInterestAmount: Amount of accrued penalty interest paid.
+        * discountAmount: Discount that was granted when a claim was paid.
+
       properties:
         claimKey:
           $ref: "#/components/schemas/claimKey"
@@ -2409,92 +2399,57 @@ components:
           type: string
           format: date
         templateCode:
-          description: |
-            Creditors' identity to which the collection claim relates. Specifies the disposable account of the
-            creditors to use the system.
           $ref: "#/components/schemas/templateCode"
         reference:
-          description: |
-            Reference number determined by creditors. May be a number and letters.
           $ref: "#/components/schemas/reference"
         categoryCode:
-          description: Creditors' text key, explanation of payment. Optional attribute on billing claim
           type: string
           pattern: '[0-9]{3}'
         redeemingBank:
           type: string
           format: '[0-9]{4}'
         transactionDate:
-          description: Date when the update of the claims register is performed
           type: string
           format: date-time
         bookingDate:
-          description: Date when the booked at RB
           type: string
           format: date
         valueDate:
-          description: |
-            Legal date of the date on which the effective date or interest date of payment is based, a maximum of 10
-            calendar days back in time. If the date is not specified, blank, then it is based on the transaction date.
-            Payment of a claim is the interest date of the effective date of penalty interest.
           type: string
           format: date
         paymentType:
-          description: Type of payment, full payment, deposit, refund.
           type: string
           enum:
             - "Complete"
             - "Partial"
             - "Refund"
         amountDeposited:
-          description: The amount deposited at the disposal of creditors' accounts.
           type: integer
         totalAmount:
-          description: Total amount paid
           type: integer
         capitalGainsTax:
-          description: Deducted capital gains tax.
           type: integer
         billNumber:
-          description: Bill number.
           type: string
         customerNumber:
-          description: Customer number.
           type: string
           maxLength: 12
         noticeChargeAmount:
-          description: Paid notification fee
           type: integer
         defaultChargeAmount:
-          description: Paid amount of arrears to be paid
           type: integer
         otherCostsAmount:
-          description: Other paid cost.
           type: integer
         otherDefaultCostsAmount:
-          description: Other default paid.
           type: integer
         defaultInterestAmount:
-          description: Amount of accrued penalty interest paid.
           type: integer
         discountAmount:
-          description: Discount that was granted when a claim was paid.
           type: integer
         currency:
           $ref: "#/components/schemas/currencyInformation"
         batchNumber:
           $ref: "#/components/schemas/uuid"
-        isCapitalGainTaxWithdrawn:
-          description: |
-            Has capital gain tax been withdrawn
-          type: boolean
-
-    readClaimResponse:
-      description: OK
-      type: object
-      properties:
-        claim:
-          $ref: "#/components/schemas/claimDetails"
 
     #####################################################
     # Standard messages
@@ -2507,14 +2462,8 @@ components:
         - "ERROR"
         - "WARNING"
 
-    MessageCode2XX:
-      description: Message codes for HTTP Error codes 2XX.
-      type: string
-      enum:
-        - "WARNING"
-
     MessageCode400:
-      description: Message codes defined for AIS for HTTP Error code 400 (BAD_REQUEST).
+      description: Message codes. HTTP Error code 400 (BAD_REQUEST).
       type: string
       enum:
         - "FORMAT_ERROR"              #gen
@@ -2529,10 +2478,10 @@ components:
         - "SCA_METHOD_UNKNOWN"        #gen
         - "SCA_INVALID"               #gen
         - "CONSENT_UNKNOWN"           #gen
-        - "SESSIONS_NOT_SUPPORTED"    #AIS
+        - "SESSIONS_NOT_SUPPORTED"    #gen
 
     MessageCode401:
-      description: Message codes defined for AIS for HTTP Error code 401 (UNAUTHORIZED).
+      description: Message codes. HTTP Error code 401 (UNAUTHORIZED).
       type: string
       enum:
         - "CERTIFICATE_INVALID"       #gen
@@ -2543,16 +2492,12 @@ components:
         - "CERTIFICATE_MISSING"       #gen
         - "SIGNATURE_INVALID"         #gen
         - "SIGNATURE_MISSING"         #gen
-        - "CORPORATE_ID_INVALID"      #gen
-        - "PSU_CREDENTIALS_INVALID"   #gen
-        - "CONSENT_INVALID"           #gen, AIS
-        - "CONSENT_EXPIRED"           #gen
         - "TOKEN_UNKNOWN"             #gen
         - "TOKEN_INVALID"             #gen
         - "TOKEN_EXPIRED"             #gen
 
     MessageCode403:
-      description: Message codes defined for AIS for HTTP Error code 403 (FORBIDDEN).
+      description: Message codes. HTTP Error code 403 (FORBIDDEN).
       type: string
       enum:
         - "CONSENT_UNKNOWN"           #gen
@@ -2561,34 +2506,16 @@ components:
         - "RESOURCE_EXPIRED"          #gen
 
     MessageCode404:
-      description: Message codes defined for AIS for HTTP Error code 404 (NOT FOUND).
+      description: Message codes. HTTP Error code 404 (NOT FOUND).
       type: string
       enum:
         - "RESOURCE_UNKNOWN"          #gens
 
     MessageCode405:
-      description: Message codes defined for AIS for HTTP Error code 405 (METHOD NOT ALLOWED).
+      description: Message codes. HTTP Error code 405 (METHOD NOT ALLOWED).
       type: string
       enum:
         - "SERVICE_INVALID"           #gens
-
-    MessageCode406:
-      description: Message codes defined for AIS for HTTP Error code 406 (NOT ACCEPTABLE).
-      type: string
-      enum:
-        - "REQUESTED_FORMATS_INVALID"  #AIS
-
-    MessageCode409:
-      description: Message codes defined for AIS for HTTP Error code 409 (CONFLICT).
-      type: string
-      enum:
-        - "STATUS_INVALID"            #gen
-
-    MessageCode429:
-      description: Message codes for HTTP Error code 429 (TOO MANY REQUESTS).
-      type: string
-      enum:
-        - "ACCESS_EXCEEDED"           #AIS
 
     #####################################################
     # Proprietary messages
@@ -2598,51 +2525,6 @@ components:
       description: Additional explaining text.
       type: string
       maxLength: 500
-
-    message2XX:
-      type: object
-      required:
-        - category
-        - code
-      properties:
-        category:
-           $ref: "#/components/schemas/messageCategory"
-        code:
-          $ref: "#/components/schemas/MessageCode2XX"
-        path:
-          type: string
-        text:
-          $ref: "#/components/schemas/messageText"
-
-    message400:
-      type: object
-      required:
-        - category
-        - code
-      properties:
-        category:
-           $ref: "#/components/schemas/messageCategory"
-        code:
-          $ref: "#/components/schemas/MessageCode400"
-        path:
-          type: string
-        text:
-          $ref: "#/components/schemas/messageText"
-
-    message401:
-      type: object
-      required:
-        - category
-        - code
-      properties:
-        category:
-           $ref: "#/components/schemas/messageCategory"
-        code:
-          $ref: "#/components/schemas/MessageCode401"
-        path:
-          type: string
-        text:
-          $ref: "#/components/schemas/messageText"
 
     message403:
       type: object
@@ -2689,52 +2571,6 @@ components:
         text:
           $ref: "#/components/schemas/messageText"
 
-    message406:
-      type: object
-      required:
-        - category
-        - code
-      properties:
-        category:
-           $ref: "#/components/schemas/messageCategory"
-        code:
-          $ref: "#/components/schemas/MessageCode406"
-        path:
-          type: string
-        text:
-          $ref: "#/components/schemas/messageText"
-
-    message409:
-      type: object
-      required:
-        - category
-        - code
-      properties:
-        category:
-           $ref: "#/components/schemas/messageCategory"
-        code:
-          $ref: "#/components/schemas/MessageCode409"
-        path:
-          type: string
-        text:
-          $ref: "#/components/schemas/messageText"
-
-    message429:
-      type: object
-      required:
-        - category
-        - code
-      properties:
-        category:
-           $ref: "#/components/schemas/messageCategory"
-        code:
-          $ref: "#/components/schemas/MessageCode429"
-        path:
-          type: string
-        text:
-          $ref: "#/components/schemas/messageText"
-
-
     #####################################################
     # RFC7807 Messages
     #####################################################
@@ -2761,8 +2597,7 @@ components:
 
     Error400:
       description: |
-        Standardised definition of reporting error information according to [RFC7807]
-        in case of a HTTP error code 400 for AIS.
+        Standardised definition of reporting error information according to [RFC7807].
       type: object
       required:
         - type
@@ -2813,8 +2648,7 @@ components:
 
     Error401:
       description: |
-        Standardised definition of reporting error information according to [RFC7807]
-        in case of a HTTP error code 401 for AIS.
+        Standardised definition of reporting error information according to [RFC7807].
       type: object
       required:
         - type
@@ -2865,8 +2699,7 @@ components:
 
     Error403:
       description: |
-        Standardised definition of reporting error information according to [RFC7807]
-        in case of a HTTP error code 403 for AIS.
+        Standardised definition of reporting error information according to [RFC7807].
       type: object
       required:
         - type
@@ -2917,8 +2750,7 @@ components:
 
     Error404:
       description: |
-        Standardised definition of reporting error information according to [RFC7807]
-        in case of a HTTP error code 404 for AIS.
+        Standardised definition of reporting error information according to [RFC7807].
       type: object
       required:
         - type
@@ -2927,7 +2759,6 @@ components:
         type:
           description: |
             A URI reference [RFC3986] that identifies the problem type.
-            Remark For Future: These URI will be provided by NextGenPSD2 in future.
           type: string
           format: uri
           maxLength: 70
@@ -2970,8 +2801,7 @@ components:
 
     Error405:
       description: |
-        Standardised definition of reporting error information according to [RFC7807]
-        in case of a HTTP error code 405 for AIS.
+        Standardised definition of reporting error information according to [RFC7807].
       type: object
       required:
         - type
@@ -2980,7 +2810,6 @@ components:
         type:
           description: |
             A URI reference [RFC3986] that identifies the problem type.
-            Remark For Future: These URI will be provided by NextGenPSD2 in future.
           type: string
           format: uri
           maxLength: 70
@@ -3021,188 +2850,6 @@ components:
         _links:
           $ref: "#/components/schemas/_linksAll"
 
-    Error406:
-      description: |
-        Standardised definition of reporting error information according to [RFC7807]
-        in case of a HTTP error code 406 for AIS.
-      type: object
-      required:
-        - type
-        - code
-      properties:
-        type:
-          description: |
-            A URI reference [RFC3986] that identifies the problem type.
-          type: string
-          format: uri
-          maxLength: 70
-        title:
-          description: |
-            Short human readable description of error type.
-            Could be in local language.
-            To be provided by ASPSPs.
-          type: string
-          maxLength: 70
-        detail:
-          description: |
-            Detailed human readable text specific to this instance of the error.
-            XPath might be used to point to the issue generating the error in addition.
-            Remark for Future: In future, a dedicated field might be introduced for the XPath.
-          type: string
-          maxLength: 500
-        code:
-          $ref: "#/components/schemas/MessageCode406"
-        additionalErrors:
-          description: |
-            Array of Error Information Blocks.
-
-            Might be used if more than one error is to be communicated
-          type: array
-          items: #ErrorInformation
-            description: This is a data element to support the declaration of additional errors in the context of [RFC7807].
-            type: object
-            required:
-              - code
-            properties:
-              title:
-                $ref: "#/components/schemas/errorTitle"
-              detail:
-                $ref: "#/components/schemas/errorDetail"
-              code:
-                $ref: "#/components/schemas/MessageCode406"
-        _links:
-          $ref: "#/components/schemas/_linksAll"
-
-    Error409:
-      description: |
-        Standardised definition of reporting error information according to [RFC7807]
-        in case of a HTTP error code 409 for AIS.
-      type: object
-      required:
-        - type
-        - code
-      properties:
-        type:
-          description: |
-            A URI reference [RFC3986] that identifies the problem type.
-          type: string
-          format: uri
-          maxLength: 70
-        title:
-          description: |
-            Short human readable description of error type.
-            Could be in local language.
-            To be provided by ASPSPs.
-          type: string
-          maxLength: 70
-        detail:
-          description: |
-            Detailed human readable text specific to this instance of the error.
-            XPath might be used to point to the issue generating the error in addition.
-            Remark for Future: In future, a dedicated field might be introduced for the XPath.
-          type: string
-          maxLength: 500
-        code:
-          $ref: "#/components/schemas/MessageCode409"
-        additionalErrors:
-          description: |
-            Array of Error Information Blocks.
-
-            Might be used if more than one error is to be communicated
-          type: array
-          items: #ErrorInformation
-            description: This is a data element to support the declaration of additional errors in the context of [RFC7807].
-            type: object
-            required:
-              - code
-            properties:
-              title:
-                $ref: "#/components/schemas/errorTitle"
-              detail:
-                $ref: "#/components/schemas/errorDetail"
-              code:
-                $ref: "#/components/schemas/MessageCode409"
-        _links:
-          $ref: "#/components/schemas/_linksAll"
-
-    Error429:
-      description: |
-        Standardised definition of reporting error information according to [RFC7807]
-        in case of a HTTP error code 429 for AIS.
-      type: object
-      required:
-        - type
-        - code
-      properties:
-        type:
-          description: |
-            A URI reference [RFC3986] that identifies the problem type.
-          type: string
-          format: uri
-          maxLength: 70
-        title:
-          description: |
-            Short human readable description of error type.
-            Could be in local language.
-            To be provided by ASPSPs.
-          type: string
-          maxLength: 70
-        detail:
-          description: |
-            Detailed human readable text specific to this instance of the error.
-            XPath might be used to point to the issue generating the error in addition.
-            Remark for Future: In future, a dedicated field might be introduced for the XPath.
-          type: string
-          maxLength: 500
-        code:
-          $ref: "#/components/schemas/MessageCode429"
-        additionalErrors:
-          description: |
-            Array of Error Information Blocks.
-
-            Might be used if more than one error is to be communicated
-          type: array
-          items: #ErrorInformation
-            description: |
-              This is a data element to support the declaration of additional errors in the context of [RFC7807]
-              in case of a HTTP error code 429 for.
-            type: object
-            required:
-              - code
-            properties:
-              title:
-                $ref: "#/components/schemas/errorTitle"
-              detail:
-                $ref: "#/components/schemas/errorDetail"
-              code:
-                $ref: "#/components/schemas/MessageCode429"
-        _links:
-          $ref: "#/components/schemas/_linksAll"
-
-    Error400_NG:
-      description: |
-        IOBWS specific definition of reporting error information in case of a HTTP error code 400.
-      type: object
-      properties:
-        messages:
-          type: array
-          items:
-            $ref: "#/components/schemas/message400"
-        _links:
-          $ref: "#/components/schemas/_linksAll"
-
-    Error401_NG:
-      description: |
-        IOBWS specific definition of reporting error information in case of a HTTP error code 401.
-      type: object
-      properties:
-        messages:
-          type: array
-          items:
-            $ref: "#/components/schemas/message401"
-        _links:
-          $ref: "#/components/schemas/_linksAll"
-
     Error403_NG:
       description: |
         IOBWS specific definition of reporting error information in case of a HTTP error code 403.
@@ -3238,55 +2885,6 @@ components:
             $ref: "#/components/schemas/message405"
         _links:
           $ref: "#/components/schemas/_linksAll"
-
-    Error406_NG:
-      description: |
-        IOBWS specific definition of reporting error information in case of a HTTP error code 406.
-      type: object
-      properties:
-        messages:
-          type: array
-          items:
-            $ref: "#/components/schemas/message406"
-        _links:
-          $ref: "#/components/schemas/_linksAll"
-
-    Error409_NG:
-      description: |
-        IOBWS specific definition of reporting error information in case of a HTTP error code 409.
-      type: object
-      properties:
-        messages:
-          type: array
-          items:
-            $ref: "#/components/schemas/message409"
-        _links:
-          $ref: "#/components/schemas/_linksAll"
-      example:
-        [{
-          "category": "ERROR",
-          "code": "STATUS_INVALID",
-          "text": "additional text information of the ASPSP up to 500 characters"
-        }]
-
-    Error429_NG:
-      description: |
-        IOBWS specific definition of reporting error information in case of a HTTP error code 429.
-      type: object
-      properties:
-        messages:
-          type: array
-          items:
-            $ref: "#/components/schemas/message429"
-        _links:
-          $ref: "#/components/schemas/_linksAll"
-      example:
-        [{
-          "category": "ERROR",
-          "code": "ACCESS_EXCEEDED",
-          "text": "additional text information of the ASPSP up to 500 characters"
-        }]
-
 
   parameters:
   #####################################################
@@ -3332,23 +2930,11 @@ components:
       schema:
         type: string
 
-    PSU-IP-Address_optional:
-      name: PSU-IP-Address
-      in: header
-      description: |
-        The forwarded IP Address header field consists of the corresponding http request IP Address field between PSU and TPP.
-      schema:
-        type: string
-        format: ipv4
-      required: false
-      example: 192.168.8.78
-
     Authorization:
       name: Authorization
       in: header
       description: |
-        This field  might be used in case where a consent was agreed between ASPSP and PSU through an OAuth2 based protocol,
-        facilitated by the TPP.
+        The bearer token
       required: false
       schema:
         $ref: "#/components/schemas/authorization"
@@ -3358,6 +2944,16 @@ components:
       in: header
       description: ID of the request, unique to the call, as determined by the initiating party.
       required: true
+      example: "99391c7e-ad88-49ec-a2ad-99ddcb1f7721"
+      schema:
+        type: string
+        format: uuid
+
+    X-Idempotency-Key:
+      name: X-Idempotency-Key
+      in: header
+      description: Idempotency key
+      required: false
       example: "99391c7e-ad88-49ec-a2ad-99ddcb1f7721"
       schema:
         type: string
@@ -3466,6 +3062,14 @@ components:
       required: false
       schema:
         $ref: "#/components/schemas/kennitala"
+
+    bankCodeQuery:
+      name: bankCode
+      in: query
+      description: |
+        Bank code
+      schema:
+        $ref: "#/components/schemas/bankCode"
 
     templateCodeQuery:
       name: templateCode
@@ -3612,6 +3216,24 @@ components:
           schema:
             $ref: "#/components/schemas/createClaimDetails"
 
+    patchClaimList:
+      description: |
+        JSON request body for patching a list of claim messages
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/patchObjectList"
+
+    patchClaim:
+      description: |
+        JSON request body for patching a list of claim messages
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/patchObject"
+
   headers:
   #####################################################
   # Reusable Response Header Elements
@@ -3620,14 +3242,6 @@ components:
     X-Request-ID:
       description: ID of the request, unique to the call, as determined by the initiating party.
       required: true
-      example: "99391c7e-ad88-49ec-a2ad-99ddcb1f7721"
-      schema:
-        type: string
-        format: uuid
-
-    X-Idempotency-Key:
-      description: Idempotency key
-      required: false
       example: "99391c7e-ad88-49ec-a2ad-99ddcb1f7721"
       schema:
         type: string
